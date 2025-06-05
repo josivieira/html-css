@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Conecta Impacto Social</title>
+  <link rel="stylesheet" href="/static/styles_index.css">
+</head>
+<body>
+  <header>
+    <h1>Conecta Impacto Social</h1>
+    <nav>
+      <button id="nav-home" class="active" aria-controls="section-home">Início</button>
+      <button id="nav-job-seeker" aria-controls="section-job-seeker">Sou Candidato</button>
+      <button id="nav-company" aria-controls="section-company">Sou Empresa</button>
+      <button id="nav-listings" aria-controls="section-listings">Oportunidades</button>
+    </nav>
+  </header>
+  <main>
+    <section id="section-home" class="active" role="region" aria-labelledby="home-title">
+      <div class="intro">
+        <h2 id="home-title">Conectando pessoas e empresas para um impacto social real</h2>
+        <p>Uma plataforma inclusiva para jovens, profissionais em transição e pessoas em situação de vulnerabilidade encontrarem oportunidades de trabalho, capacitação e projetos sociais.</p>
+      </div>
+    </section>
+
+    <section id="section-job-seeker" role="region" aria-labelledby="job-seeker-title">
+      <h3 id="job-seeker-title">Perfil do Candidato</h3>
+      <form id="jobSeekerForm" aria-describedby="jobSeekerFormDesc">
+        <p id="jobSeekerFormDesc">Preencha seu perfil para se conectar com empresas e oportunidades.</p>
+        <label for="js-name">Nome completo</label>
+        <input type="text" id="js-name" name="js-name" required placeholder="Seu nome completo" />
+
+        <label for="js-background">Conte um pouco sobre você</label>
+        <textarea id="js-background" name="js-background" required placeholder="Histórico, experiência ou situação atual"></textarea>
+
+        <label for="js-skills">Habilidades / Áreas de interesse</label>
+        <input type="text" id="js-skills" name="js-skills" required placeholder="Ex: Atendimento, Tecnologia, Logística" />
+
+        <button type="submit" class="submit-btn">Criar Perfil</button>
+      </form>
+      <div id="jobSeekerSuccess" class="success-message" hidden>Perfil criado com sucesso!</div>
+    </section>
+
+    <section id="section-company" role="region" aria-labelledby="company-title">
+      <h3 id="company-title">Postar Oportunidade</h3>
+      <form id="companyForm" aria-describedby="companyFormDesc">
+        <p id="companyFormDesc">Publique oportunidades para contratação, capacitação ou projetos de impacto social.</p>
+        <label for="comp-name">Nome da empresa</label>
+        <input type="text" id="comp-name" name="comp-name" required placeholder="Sua empresa ou projeto" />
+
+        <label for="op-type">Tipo de oportunidade</label>
+        <select id="op-type" name="op-type" required>
+          <option value="" disabled selected>Selecione o tipo</option>
+          <option value="Emprego">Emprego</option>
+          <option value="Capacitação">Capacitação</option>
+          <option value="Projeto Social">Projeto Social</option>
+        </select>
+
+        <label for="op-title">Título da oportunidade</label>
+        <input type="text" id="op-title" name="op-title" required placeholder="Nome/descrição da vaga ou projeto" />
+
+        <label for="op-description">Descrição detalhada</label>
+        <textarea id="op-description" name="op-description" required placeholder="Detalhes da oferta, etapas, requisitos"></textarea>
+
+        <button type="submit" class="submit-btn">Publicar Oportunidade</button>
+      </form>
+      <div id="companySuccess" class="success-message" hidden>Oportunidade publicada com sucesso!</div>
+    </section>
+
+    <section id="section-listings" role="region" aria-labelledby="listings-title">
+      <h3 id="listings-title">Oportunidades Ativas</h3>
+      <div id="listingsContainer" class="listings" aria-live="polite" aria-relevant="additions"></div>
+      <div id="noListings" style="text-align:center; color:#aaa; margin-top: 1rem;">Nenhuma oportunidade postada ainda.</div>
+    </section>
+  </main>
+  <footer>
+    &copy; 2024 Conecta Impacto Social — Todos os direitos reservados
+  </footer>
+
+  <script>
+    // State
+    let listings = JSON.parse(localStorage.getItem('listings')) || [];
+    let jobSeekerProfile = JSON.parse(localStorage.getItem('jobSeekerProfile')) || null;
+
+    // Elements
+    const navButtons = document.querySelectorAll('nav button');
+    const sections = document.querySelectorAll('main section');
+    const listingsContainer = document.getElementById('listingsContainer');
+    const noListings = document.getElementById('noListings');
+
+    const jobSeekerForm = document.getElementById('jobSeekerForm');
+    const jobSeekerSuccess = document.getElementById('jobSeekerSuccess');
+
+    const companyForm = document.getElementById('companyForm');
+    const companySuccess = document.getElementById('companySuccess');
+
+    // Navigation handler
+    navButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        // Toggle active button
+        navButtons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+
+        // Show relevant section
+        sections.forEach(sec => {
+          sec.classList.remove('active');
+          if (sec.id === button.getAttribute('aria-controls')) {
+            sec.classList.add('active');
+          }
+        });
+      });
+    });
+
+    // Render listings
+    function renderListings() {
+      listingsContainer.innerHTML = '';
+      if (listings.length === 0) {
+        noListings.style.display = 'block';
+        return;
+      } else {
+        noListings.style.display = 'none';
+      }
+      listings.forEach((listing, index) => {
+        const item = document.createElement('div');
+        item.className = 'listing-item';
+        item.innerHTML = `
+          <h4>${escapeHtml(listing.title)} <small>(${escapeHtml(listing.type)})</small></h4>
+          <p><strong>Empresa/Projeto:</strong> ${escapeHtml(listing.company)}</p>
+          <p>${escapeHtml(listing.description)}</p>
+          <button class="apply-btn" data-id="${index}">Conectar-se</button>
+        `;
+        listingsContainer.appendChild(item);
+      });
+
+      // Attach event listeners for apply buttons
+      document.querySelectorAll('.apply-btn').forEach(btn => {
+        btn.addEventListener('click', e => {
+          const id = e.target.getAttribute('data-id');
+          applyToListing(id);
+        });
+      });
+    }
+
+    // Handling apply
+    function applyToListing(id) {
+      if (!jobSeekerProfile) {
+        alert('Por favor, crie seu perfil de candidato antes de se conectar às oportunidades.');
+        navShow('section-job-seeker');
+        return;
+      }
+      const listing = listings[id];
+      const applicationsKey = 'applications_' + id;
+      let applications = JSON.parse(localStorage.getItem(applicationsKey)) || [];
+
+      const alreadyApplied = applications.some(app => app.name === jobSeekerProfile.name);
+      if (alreadyApplied) {
+        alert('Você já se conectou a essa oportunidade.');
+        return;
+      }
+
+      applications.push(jobSeekerProfile);
+      localStorage.setItem(applicationsKey, JSON.stringify(applications));
+      alert('Você se conectou com sucesso a essa oportunidade! Boa sorte!');
+    }
+
+    // Escape HTML to avoid injection
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Show a section by id, change nav active accordingly
+    function navShow(sectionId) {
+      navButtons.forEach(btn => {
+        if (btn.getAttribute('aria-controls') === sectionId) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+      sections.forEach(sec => {
+        sec.classList.toggle('active', sec.id === sectionId);
+      });
+    }
+
+    // Job seeker form submission
+    jobSeekerForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const name = jobSeekerForm['js-name'].value.trim();
+      const background = jobSeekerForm['js-background'].value.trim();
+      const skills = jobSeekerForm['js-skills'].value.trim();
+
+      if (name && background && skills) {
+        jobSeekerProfile = { name, background, skills };
+        localStorage.setItem('jobSeekerProfile', JSON.stringify(jobSeekerProfile));
+        jobSeekerSuccess.hidden = false;
+        setTimeout(() => { jobSeekerSuccess.hidden = true; }, 3000);
+        jobSeekerForm.reset();
+      }
+    });
+
+    // Company form submission
+    companyForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const company = companyForm['comp-name'].value.trim();
+      const type = companyForm['op-type'].value;
+      const title = companyForm['op-title'].value.trim();
+      const description = companyForm['op-description'].value.trim();
+
+      if (company && type && title && description) {
+        listings.push({ company, type, title, description });
+        localStorage.setItem('listings', JSON.stringify(listings));
+        companySuccess.hidden = false;
+        setTimeout(() => { companySuccess.hidden = true; }, 3000);
+        companyForm.reset();
+        renderListings();
+        navShow('section-listings');
+      }
+    });
+
+    // Initial render
+    renderListings();
+  </script>
+</body>
+</html>
